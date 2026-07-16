@@ -143,3 +143,4 @@ vite.config.ts.timestamp-*
 .vite/
 __pycache__
 env
+package-lock.json
