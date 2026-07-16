@@ -1,0 +1,15 @@
+# PyTorch nightly CUDA 13.0 build — not on the default PyPI index.
+# Install first from https://download.pytorch.org/whl/nightly/cu130 (or your matching CUDA build),
+# then install the rest of this file.
+torch==2.14.0.dev20260620+cu130
+
+fastapi==0.137.2
+uvicorn==0.49.0
+APScheduler==3.11.3
+SQLAlchemy==2.0.51
+PyMySQL==1.2.0
+yt-dlp==2026.6.9
+transformers==5.12.1
+openai==2.43.0
+langchain-text-splitters==1.1.2
+tqdm==4.68.3
