@@ -10,9 +10,9 @@ def process_pending_download():
         if video is None:
             return
 
-        status_row = start_step(db, video.video_id, "download")
+        status_row = start_step(db, video.id, "download")
         try:
-            audio_path = download_video_audio(video.video_id, video.url)
+            audio_path = download_video_audio(video.id, video.url)
             video.audio_path = audio_path
             db.commit()
         except Exception:

@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship, Session
 class Video(Base):
     __tablename__ = "video"
 
-    video_id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String(100))
     url = Column(String(100))
     audio_path = Column(String(255), nullable=True)
@@ -20,7 +20,7 @@ def get_next_video_without_audio(db: Session):
     return (
         db.query(Video)
         .filter(Video.audio_path.is_(None))
-        .filter(~Video.video_id.in_(get_processing_video_ids(db)))
-        .order_by(Video.video_id.asc())
+        .filter(~Video.id.in_(get_processing_video_ids(db)))
+        .order_by(Video.id.asc())
         .first()
     )

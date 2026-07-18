@@ -2,7 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 // import cloudinary from 'cloudinary';
 import cors from 'cors';
-import { connectDb, seed } from './config/database.js';
+import { connectDb } from './config/database.js';
 import dotenv from 'dotenv'
 import apiRoutes from './routes/index.js'
 import { errorHandler, notFound } from './middleware/errorMiddleware.js';

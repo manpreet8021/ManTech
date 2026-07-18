@@ -12,12 +12,12 @@ def process_pending_transcription():
         if video is None:
             return
 
-        status_row = start_step(db, video.video_id, "transcribe")
+        status_row = start_step(db, video.id, "transcribe")
         try:
             result = transcribe_audio(video.audio_path)
 
             transcript = Transcribe(
-                video_id=video.video_id,
+                video_id=video.id,
                 transcription=result.get("text", ""),
                 chunks=json.dumps(result.get("chunks", [])),
             )

@@ -5,8 +5,8 @@ from sqlalchemy.orm import relationship, Session
 class Quiz(Base):
     __tablename__ = "quiz"
 
-    quiz_id = Column(Integer, primary_key=True)
-    video_id = Column(Integer, ForeignKey("video.video_id"), nullable=False)
+    id = Column(Integer, primary_key=True)
+    video_id = Column(Integer, ForeignKey("video.id"), nullable=False)
     question = Column(Text, nullable=False)
     options = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
@@ -20,8 +20,8 @@ def get_next_transcript_for_quiz(db: Session):
     return (
         db.query(Transcribe)
         .outerjoin(Quiz, Quiz.video_id == Transcribe.video_id)
-        .filter(Transcribe.summary.isnot(None), Quiz.quiz_id.is_(None))
+        .filter(Transcribe.summary.isnot(None), Quiz.id.is_(None))
         .filter(~Transcribe.video_id.in_(get_processing_video_ids(db)))
-        .order_by(Transcribe.transcribe_id.asc())
+        .order_by(Transcribe.id.asc())
         .first()
     )

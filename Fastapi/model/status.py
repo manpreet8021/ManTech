@@ -5,7 +5,8 @@ from sqlalchemy.sql import func
 
 class VideoStatus(Base):
     __tablename__ = "video_status"
-    video_id = Column(Integer, ForeignKey("video.video_id"), primary_key=True)
+    id = Column(Integer, primary_key=True)
+    video_id = Column(Integer, ForeignKey("video.id"), unique=True, nullable=False)
     step = Column(String(20), nullable=False)
     status = Column(String(20), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
