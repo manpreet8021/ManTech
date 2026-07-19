@@ -8,50 +8,10 @@ import { generateToken } from "../config/jwtToken.js";
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 const SALT_ROUNDS = 10;
 
-const validateUserCreateSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  password: Joi.string()
-    .pattern(PASSWORD_REGEX)
-    .required()
-    .messages({
-      "string.pattern.base":
-        "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.",
-    }),
-})
-
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required()
 })
-
-const createUser = asyncHandler(async (req, res) => {
-  const { error } = validateUserCreateSchema.validate(req.body, { abortEarly: false })
-
-  if (error) {
-    res.status(400)
-    throw new Error(error.message)
-  }
-
-  const hashedPassword = await bcrypt.hash(req.body.password, SALT_ROUNDS)
-
-  let insertUser;
-  try {
-    insertUser = await createUserModel({ ...req.body, password: hashedPassword })
-  } catch (err) {
-    if (err.name === "SequelizeUniqueConstraintError") {
-      res.status(409)
-      throw new Error("Email is already registered")
-    }
-    throw err
-  }
-
-  res.status(201).json({
-    id: insertUser.id,
-    name: insertUser.name,
-    email: insertUser.email,
-  });
-});
 
 const login = asyncHandler(async (req, res) => {
   const { error } = loginSchema.validate(req.body, { abortEarly: false })
@@ -101,6 +61,5 @@ const login = asyncHandler(async (req, res) => {
 })
 
 export {
-  createUser,
   login
 };

@@ -33,3 +33,5 @@ Organisation.init(
 );
 
 export default Organisation
+
+export const findOrganisation = async (condition) => await Organisation.findOne({ where: condition });

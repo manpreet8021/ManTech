@@ -190,6 +190,18 @@ export const mockAnalytics = {
   ],
 }
 
+// Roles assignable from the Users admin page. Student accounts are created
+// separately via the invite-only flow, not here.
+export const mockRoles = ['admin', 'teacher']
+
+// TODO: replace with a real RTK Query hook, e.g. useGetUsersQuery() /
+// useAddUserMutation(), backed by the user + user_role_mapping tables.
+export const mockUsers = [
+  { user_id: 1, name: 'Priya Sharma', email: 'priya.sharma@example.com', role: 'teacher', active: true },
+  { user_id: 2, name: 'Rohan Mehta', email: 'rohan.mehta@example.com', role: 'teacher', active: true },
+  { user_id: 3, name: 'Anita Desai', email: 'anita.desai@example.com', role: 'admin', active: false },
+]
+
 export function getTeacherStats() {
   const totalStudents = new Set(mockInvites.filter((i) => i.status === 'accepted').map((i) => i.email))
     .size

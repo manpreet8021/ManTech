@@ -2,11 +2,14 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import StudentDashboardPage from './pages/StudentDashboardPage'
 import VideoPlayerPage from './pages/VideoPlayerPage'
-import TeacherLayout from './layouts/TeacherLayout'
-import TeacherHomePage from './pages/TeacherHomePage'
-import TeacherDashboardPage from './pages/TeacherDashboardPage'
+import AppLayout from './layouts/AppLayout'
+import DashboardPage from './pages/DashboardPage'
+import CoursesListPage from './pages/CoursesListPage'
 import CourseDetailPage from './pages/CourseDetailPage'
+import UsersPage from './pages/UsersPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
+import RequirePermission from './components/RequirePermission'
+import RequireAuth from './components/RequireAuth'
 
 export default function App() {
   return (
@@ -17,10 +20,39 @@ export default function App() {
       <Route path="/student" element={<StudentDashboardPage />} />
       <Route path="/student/videos/:videoId" element={<VideoPlayerPage />} />
 
-      <Route path="/teacher" element={<TeacherLayout />}>
-        <Route index element={<TeacherHomePage />} />
-        <Route path="courses" element={<TeacherDashboardPage />} />
-        <Route path="courses/:courseId" element={<CourseDetailPage />} />
+      {/* Shared by admin + teacher roles; requires a session, and nav visibility/route access within it is permission-driven. */}
+      <Route
+        element={
+          <RequireAuth>
+            <AppLayout />
+          </RequireAuth>
+        }
+      >
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route
+          path="/courses"
+          element={
+            <RequirePermission resource="course">
+              <CoursesListPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/courses/:courseId"
+          element={
+            <RequirePermission resource="course">
+              <CourseDetailPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <RequirePermission resource="user">
+              <UsersPage />
+            </RequirePermission>
+          }
+        />
       </Route>
     </Routes>
   )

@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import StatusBadge from '../components/StatusBadge'
 import AddVideoModal from '../components/AddVideoModal'
 import InviteStudentModal from '../components/InviteStudentModal'
 import { getCourseById, getVideosForCourse, getInvitesForCourse } from '../data/mockData'
 import { getYoutubeThumbnail } from '../utils/youtube'
+import { hasResource } from '../utils/permissions'
 
 const TABS = [
   { id: 'videos', label: 'Videos' },
@@ -18,6 +20,8 @@ const INVITE_STATUS_STYLES = {
 
 export default function CourseDetailPage() {
   const { courseId } = useParams()
+  const permissions = useSelector((state) => state.auth.permissions)
+  const canInvite = hasResource(permissions, 'invite')
   // TODO: replace with real RTK Query hooks, e.g. useGetCourseQuery(courseId) / useGetVideosQuery({ courseId })
   const course = getCourseById(courseId)
   const [activeTab, setActiveTab] = useState('videos')
@@ -57,7 +61,7 @@ export default function CourseDetailPage() {
     return (
       <div className="text-center">
         <p className="text-slate-500">Course not found.</p>
-        <Link to="/teacher/courses" className="mt-4 inline-block text-sm font-medium text-indigo-600">
+        <Link to="/courses" className="mt-4 inline-block text-sm font-medium text-indigo-600">
           Back to your courses
         </Link>
       </div>
@@ -67,7 +71,7 @@ export default function CourseDetailPage() {
   return (
     <div>
       <Link
-        to="/teacher/courses"
+        to="/courses"
         className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-700"
       >
         <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
@@ -85,15 +89,17 @@ export default function CourseDetailPage() {
           <h1 className="text-2xl font-semibold text-slate-900">{course.title}</h1>
           {course.description && <p className="mt-1 text-sm text-slate-500">{course.description}</p>}
         </div>
-        <button
-          onClick={() => (activeTab === 'videos' ? setAddVideoOpen(true) : setInviteOpen(true))}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-        >
-          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-          {activeTab === 'videos' ? 'Add video' : 'Invite student'}
-        </button>
+        {(activeTab === 'videos' || canInvite) && (
+          <button
+            onClick={() => (activeTab === 'videos' ? setAddVideoOpen(true) : setInviteOpen(true))}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+          >
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+            </svg>
+            {activeTab === 'videos' ? 'Add video' : 'Invite student'}
+          </button>
+        )}
       </div>
 
       <div className="mt-6 flex gap-2 border-b border-slate-200">

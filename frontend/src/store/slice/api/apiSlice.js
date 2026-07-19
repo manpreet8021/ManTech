@@ -1,32 +1,34 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
-import {BASE_URL} from '@env';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { logout } from '../authSlice'
+
+const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: BASE_URL,
-  prepareHeaders: async (headers, {getState}) => {
-    const token = await EncryptedStorage.getItem('token');
+  baseUrl,
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem('token')
 
     if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+      headers.set('Authorization', `Bearer ${token}`)
     }
 
-    return headers;
+    return headers
   },
-});
+})
 
-const baseQueryWith401Handler = async (args, api, extraOptions) => {
-  const result = await baseQuery(args, api, extraOptions);
+const baseQueryWithAuthHandling = async (args, api, extraOptions) => {
+  const result = await baseQuery(args, api, extraOptions)
 
   if (result?.error?.status === 401) {
-    // await removeAsyncStorageData(ACCOUNT_PARTIAL_CREATED)
-    // await removeAsyncStorageData(ACCOUNT_CREATED)
-    // api.dispatch(setShowScreen('loggedIn'));
+    localStorage.removeItem('token')
+    api.dispatch(logout())
   }
 
-  return result.error ? Promise.reject(result) : result;
-};
+  return result
+}
 
 export const apiSlice = createApi({
-  baseQuery: baseQueryWith401Handler,
-  endpoints: builder => ({}),
-});
+  baseQuery: baseQueryWithAuthHandling,
+  tagTypes: ['Video', 'Quiz'],
+  endpoints: () => ({}),
+})

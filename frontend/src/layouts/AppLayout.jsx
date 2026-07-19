@@ -1,10 +1,10 @@
 import { Outlet } from 'react-router-dom'
-import TeacherSidebar from '../components/TeacherSidebar'
+import AppSidebar from '../components/AppSidebar'
 
-export default function TeacherLayout() {
+export default function AppLayout() {
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <TeacherSidebar />
+      <AppSidebar />
       <main className="min-w-0 flex-1 overflow-y-auto px-8 py-8">
         <Outlet />
       </main>

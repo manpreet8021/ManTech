@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import CreateCourseModal from '../components/CreateCourseModal'
 import { mockCourses, mockVideos } from '../data/mockData'
+import { hasPermission } from '../utils/permissions'
+import { useSelector } from 'react-redux'
 
-export default function TeacherDashboardPage() {
+export default function CoursesListPage() {
   // TODO: replace with real RTK Query hooks, e.g. useGetCoursesQuery()
   const [courses, setCourses] = useState(mockCourses)
   const [modalOpen, setModalOpen] = useState(false)
+  const permissions = useSelector((state) => state.auth.permissions)
 
   const handleCreate = ({ title, description }) => {
     setCourses((prev) => [
@@ -27,7 +30,7 @@ export default function TeacherDashboardPage() {
         </div>
         <button
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+          className={!hasPermission(permissions, "course", "write") ? "hidden" : "flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"}
         >
           <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
             <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
@@ -43,7 +46,7 @@ export default function TeacherDashboardPage() {
           return (
             <Link
               key={course.course_id}
-              to={`/teacher/courses/${course.course_id}`}
+              to={`/courses/${course.course_id}`}
               className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
             >
               <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">

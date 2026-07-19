@@ -1,10 +1,11 @@
 import express from 'express';
 import { createPermission, createRole, createRolePermission, getAllPermission, getAllRoles, getRolePermission, getUserPermission } from '../controller/rolePermission.js';
+import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router()
 
-router.route('/role').get(getAllRoles)
-router.route('/permission').get(getAllPermission)
+router.route('/role').get(protect, getAllRoles)
+router.route('/permission').get(protect, getAllPermission)
 router.route('/role').post(createRole)
 router.route('/permission').post(createPermission)
 router.route('/rolePermission').get(getRolePermission)

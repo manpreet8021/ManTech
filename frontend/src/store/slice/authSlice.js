@@ -13,10 +13,12 @@ const authSlice = createSlice({
     setCredentials: (state, action) => {
       state.user = action.payload.user
       state.role = action.payload.role
+      state.permissions = action.payload.permissions || []
     },
     logout: (state) => {
       state.user = null
       state.role = null
+      state.permissions = []
     },
   },
 })

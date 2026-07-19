@@ -1,0 +1,52 @@
+import Joi from "joi";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import asyncHandler from "../middleware/asyncHandler.js";
+import { createUserModel } from "../model/userModel.js";
+import { createUserRole } from "../model/userRoleModel.js";
+
+const SALT_ROUNDS = 10;
+
+const validateAddUser = Joi.object({
+    name: Joi.string().required(),
+    email: Joi.string().email().required(),
+    role_id: Joi.number().positive().required()
+})
+
+const createUser = asyncHandler(async (req, res) => {
+    const { error } = validateAddUser.validate(req.body, { abortEarly: false })
+
+    if (error) {
+        res.status(400)
+        throw new Error(error.message)
+    }
+
+    const { name, email, role_id } = req.body
+
+    // TODO: replace with a real invite-by-email flow (same pattern as student
+    // invites) so the user sets their own password. For now, generate a
+    // random placeholder since the column can't be null.
+    const temporaryPassword = crypto.randomBytes(16).toString("hex")
+    const hashedPassword = await bcrypt.hash(temporaryPassword, SALT_ROUNDS)
+
+    let newUser;
+    try {
+        newUser = await createUserModel({ name, email, password: hashedPassword, org_id: req.org_id })
+    } catch (err) {
+        if (err.name === "SequelizeUniqueConstraintError") {
+            res.status(409)
+            throw new Error("Email is already registered")
+        }
+        throw err
+    }
+
+    await createUserRole({ role_id, user_id: newUser.id })
+
+    res.status(201).json({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+    })
+})
+
+export { createUser }

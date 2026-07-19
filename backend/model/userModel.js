@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize'
 import { sequelize } from '../config/sequelize.js';
+import Organisation from './organisationModel.js';
 
 class User extends Model { }
 
@@ -21,7 +22,16 @@ User.init(
     email: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true
+        unique: 'email_org_id'
+    },
+    org_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      unique: 'email_org_id',
+      references: {
+        model: Organisation,
+        key: 'id',
+      },
     },
     password: {
         type: DataTypes.STRING,
@@ -40,6 +50,9 @@ User.init(
     timestamps: true, // Whether to add timestamps (createdAt, updatedAt)
   }
 );
+
+User.belongsTo(Organisation, { foreignKey: 'org_id' });
+Organisation.hasMany(User, { foreignKey: 'org_id' });
 
 export default User
 

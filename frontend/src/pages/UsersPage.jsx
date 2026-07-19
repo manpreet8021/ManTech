@@ -1,0 +1,129 @@
+import { useState } from 'react'
+import UserFormModal from '../components/UserFormModal'
+import { mockUsers } from '../data/mockData'
+
+export default function UsersPage() {
+  // TODO: replace with real RTK Query hooks, e.g. useGetUsersQuery() /
+  // useAddUserMutation() / useUpdateUserMutation() / useDeleteUserMutation()
+  const [users, setUsers] = useState(mockUsers)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState(null)
+
+  const openAddModal = () => {
+    setEditingUser(null)
+    setModalOpen(true)
+  }
+
+  const openEditModal = (user) => {
+    setEditingUser(user)
+    setModalOpen(true)
+  }
+
+  const handleSubmit = ({ name, email, role }) => {
+    if (editingUser) {
+      setUsers((prev) =>
+        prev.map((u) => (u.user_id === editingUser.user_id ? { ...u, name, role } : u)),
+      )
+    } else {
+      setUsers((prev) => [
+        ...prev,
+        {
+          user_id: Math.max(0, ...prev.map((u) => u.user_id)) + 1,
+          name,
+          email,
+          role,
+          active: true,
+        },
+      ])
+    }
+    setModalOpen(false)
+  }
+
+  const handleDelete = (user) => {
+    if (!window.confirm(`Remove ${user.name}?`)) return
+    setUsers((prev) => prev.filter((u) => u.user_id !== user.user_id))
+  }
+
+  return (
+    <div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">Users</h1>
+          <p className="mt-1 text-sm text-slate-500">Manage who has access and what role they have.</p>
+        </div>
+        <button
+          onClick={openAddModal}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+          </svg>
+          Add user
+        </button>
+      </div>
+
+      <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th className="px-5 py-3 font-medium">Name</th>
+              <th className="px-5 py-3 font-medium">Email</th>
+              <th className="px-5 py-3 font-medium">Role</th>
+              <th className="px-5 py-3 font-medium">Status</th>
+              <th className="px-5 py-3 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {users.map((user) => (
+              <tr key={user.user_id}>
+                <td className="px-5 py-3 font-medium text-slate-900">{user.name}</td>
+                <td className="px-5 py-3 text-slate-500">{user.email}</td>
+                <td className="px-5 py-3 capitalize text-slate-500">{user.role}</td>
+                <td className="px-5 py-3">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
+                      user.active
+                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+                        : 'bg-slate-100 text-slate-600 ring-slate-500/20'
+                    }`}
+                  >
+                    {user.active ? 'Active' : 'Inactive'}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <button
+                    onClick={() => openEditModal(user)}
+                    className="mr-3 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(user)}
+                    className="text-sm font-medium text-rose-600 hover:text-rose-700"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+
+            {users.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-slate-400">
+                  No users yet — add your first one to get started.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <UserFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+        user={editingUser}
+      />
+    </div>
+  )
+}

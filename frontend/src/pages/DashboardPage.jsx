@@ -2,13 +2,13 @@ import StatTile from '../components/StatTile'
 import AreaTrendChart from '../components/AreaTrendChart'
 import { getTeacherStats, mockAnalytics } from '../data/mockData'
 
-export default function TeacherHomePage() {
+export default function DashboardPage() {
   // TODO: replace with real RTK Query hooks, e.g. useGetTeacherStatsQuery() / useGetTeacherAnalyticsQuery()
   const stats = getTeacherStats()
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">Home</h1>
+      <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
       <p className="mt-1 text-sm text-slate-500">How your courses and students are doing.</p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
