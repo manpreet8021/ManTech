@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import asyncHandler from "../middleware/asyncHandler.js";
 import { createUserModel } from "../model/userModel.js";
-import { createUserRole } from "../model/userRoleModel.js";
+import { createUserRole, findAllUser } from "../model/userRoleModel.js";
 
 const SALT_ROUNDS = 10;
 
@@ -49,4 +49,23 @@ const createUser = asyncHandler(async (req, res) => {
     })
 })
 
-export { createUser }
+const getAllUser = asyncHandler(async (req, res) => {
+    const users = await findAllUser({ org_id: req.org_id })
+    
+    const result = users.map(user => {
+        const data = user.toJSON()
+        return {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            active: data.active,
+            roles: data.UserRoleMappings.map((mapping) => ({
+                id: mapping.Role.id,
+                name: mapping.Role.name,
+            })),
+        }
+    })
+    res.status(200).json(result)
+})
+
+export { createUser, getAllUser }

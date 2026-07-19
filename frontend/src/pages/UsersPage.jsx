@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import UserFormModal from '../components/UserFormModal'
 import { mockUsers } from '../data/mockData'
+import { useGetAllUserQuery } from '../store/slice/api/userApiSlice'
 
 export default function UsersPage() {
-  // TODO: replace with real RTK Query hooks, e.g. useGetUsersQuery() /
-  // useAddUserMutation() / useUpdateUserMutation() / useDeleteUserMutation()
-  const [users, setUsers] = useState(mockUsers)
+  const {data: users, isLoading} = useGetAllUserQuery()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
 
@@ -20,28 +19,12 @@ export default function UsersPage() {
   }
 
   const handleSubmit = ({ name, email, role }) => {
-    if (editingUser) {
-      setUsers((prev) =>
-        prev.map((u) => (u.user_id === editingUser.user_id ? { ...u, name, role } : u)),
-      )
-    } else {
-      setUsers((prev) => [
-        ...prev,
-        {
-          user_id: Math.max(0, ...prev.map((u) => u.user_id)) + 1,
-          name,
-          email,
-          role,
-          active: true,
-        },
-      ])
-    }
+    
     setModalOpen(false)
   }
 
   const handleDelete = (user) => {
     if (!window.confirm(`Remove ${user.name}?`)) return
-    setUsers((prev) => prev.filter((u) => u.user_id !== user.user_id))
   }
 
   return (
@@ -74,11 +57,11 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {users.map((user) => (
-              <tr key={user.user_id}>
+            {users && users.map((user) => (
+              <tr key={user.id}>
                 <td className="px-5 py-3 font-medium text-slate-900">{user.name}</td>
                 <td className="px-5 py-3 text-slate-500">{user.email}</td>
-                <td className="px-5 py-3 capitalize text-slate-500">{user.role}</td>
+                <td className="px-5 py-3 text-slate-500">{user.roles?.map((r) => r.name).join(', ')}</td>
                 <td className="px-5 py-3">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
@@ -107,7 +90,7 @@ export default function UsersPage() {
               </tr>
             ))}
 
-            {users.length === 0 && (
+            {users && users.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-5 py-10 text-center text-sm text-slate-400">
                   No users yet — add your first one to get started.

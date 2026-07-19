@@ -20,9 +20,9 @@ User.init(
       allowNull: true
     },
     email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: 'email_org_id'
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: 'email_org_id'
     },
     org_id: {
       type: DataTypes.INTEGER,
@@ -34,8 +34,8 @@ User.init(
       },
     },
     password: {
-        type: DataTypes.STRING,
-        allowNull: false
+      type: DataTypes.STRING,
+      allowNull: false
     },
     active: {
       type: DataTypes.BOOLEAN,
@@ -59,4 +59,4 @@ export default User
 export const createUserModel = async (data) => await User.create(data);
 export const findUser = async (condition) => await User.findOne({ where: condition });
 export const updateUser = async (data, id) => await User.update(data, { where: { id: id } });
-export const deleteUser = async (id) => await User.destroy({ where: { id: id }});
+export const deleteUser = async (id) => await User.destroy({ where: { id: id } });

@@ -1,11 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { apiSlice } from './slice/api/apiSlice'
-import authReducer from './slice/authSlice'
+import authReducer, { initialState as authInitialState } from './slice/authSlice'
+import { restoreAuthState } from '../utils/restoreAuth'
+
+const restoredAuth = restoreAuthState()
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
   },
+  preloadedState: restoredAuth
+    ? { auth: { ...authInitialState, ...restoredAuth } }
+    : undefined,
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(apiSlice.middleware),
 })

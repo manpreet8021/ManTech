@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import LoginPage from './pages/LoginPage'
 import StudentDashboardPage from './pages/StudentDashboardPage'
 import VideoPlayerPage from './pages/VideoPlayerPage'
@@ -10,11 +10,12 @@ import UsersPage from './pages/UsersPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import RequirePermission from './components/RequirePermission'
 import RequireAuth from './components/RequireAuth'
+import RootRedirect from './components/RootRedirect'
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/invite/:token" element={<AcceptInvitePage />} />
       <Route path="/student" element={<StudentDashboardPage />} />

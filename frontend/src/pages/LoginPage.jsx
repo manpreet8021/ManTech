@@ -6,6 +6,7 @@ import { useDispatch } from 'react-redux'
 import { setCredentials } from '../store/slice/authSlice'
 import { useLoginMutation } from '../store/slice/api/authApiSlice'
 import { loginSchema } from '../validation/authSchemas'
+import { setToken } from '../utils/tokenStorage'
 
 export default function LoginPage() {
   const {
@@ -29,7 +30,7 @@ export default function LoginPage() {
         return
       }
 
-      localStorage.setItem('token', response.token)
+      setToken(response.token)
       dispatch(
         setCredentials({
           user: response.email,

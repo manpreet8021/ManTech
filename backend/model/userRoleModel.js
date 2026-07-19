@@ -23,16 +23,16 @@ UserRoleMapping.init(
       },
     },
     user_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references:{
-            model: User,
-            key: 'id'
-        }
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: 'id'
+      }
     },
     active: {
       type: DataTypes.BOOLEAN,
-      defaultValue:true
+      defaultValue: true
     }
   },
   {
@@ -54,7 +54,28 @@ export default UserRoleMapping
 export const createUserRole = async (data) => await UserRoleMapping.create(data);
 export const findUserRole = async (condition) => await UserRoleMapping.findOne({ where: condition });
 export const updateUserRole = async (data, id) => await UserRoleMapping.update(data, { where: { id: id } });
-export const deleteUserRole = async (id) => await UserRoleMapping.destroy({ where: { id: id }});
+export const deleteUserRole = async (id) => await UserRoleMapping.destroy({ where: { id: id } });
+
+export const findAllUser = async (condition) => await User.findAll({
+  where: condition,
+  attributes: ["id", "name", "email", "active"],
+  include: {
+    model: UserRoleMapping,
+    where: {
+      active: true,
+    },
+    attributes: ["id"],
+    required: true,
+    include: {
+      model: Role,
+      where: {
+        active: true,
+      },
+      required: true,
+      attributes: ["id", "name"],
+    }
+  }
+});
 
 // Returns { role, permissions } for a user, e.g. { role: "teacher", permissions: [{resource:"teacher",action:"write"}, ...] }
 export const getUserRoleAndPermissions = async (userId) => {

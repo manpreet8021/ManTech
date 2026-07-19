@@ -1,7 +1,8 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../store/slice/authSlice'
 import { hasResource } from '../utils/permissions'
+import { removeToken } from '../utils/tokenStorage'
 
 const NAV_ITEMS = [
   {
@@ -41,16 +42,27 @@ const NAV_ITEMS = [
 
 export default function AppSidebar() {
   const dispatch = useDispatch()
-  const navigate = useNavigate()
   const user = useSelector((state) => state.auth.user)
   const permissions = useSelector((state) => state.auth.permissions)
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.resource || hasResource(permissions, item.resource))
 
   const handleLogout = () => {
+    // A hard navigation on purpose, not navigate(): client-side routing let
+    // RequirePermission/RequireAuth race the redirect to /login (clearing
+    // permissions while still mounted on a guarded route could trigger a
+    // competing redirect), which is why logout intermittently needed two
+    // clicks. A full reload throws away the whole app and React Router
+    // instance, so there's nothing left to race — it just boots fresh at
+    // /login with no token.
+    //
+    // replace(), not href =: href pushes a new history entry, leaving the
+    // page we're logging out of one Back press away (and browsers can
+    // restore it instantly from the back-forward cache). replace()
+    // overwrites the current entry instead, so Back skips over it.
     dispatch(logout())
-    localStorage.removeItem('token')
-    navigate('/login')
+    removeToken()
+    window.location.replace('/login')
   }
 
   return (
