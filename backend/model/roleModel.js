@@ -1,7 +1,8 @@
 import { DataTypes, Model } from 'sequelize'
 import { sequelize } from '../config/sequelize.js';
+import Organisation from './organisationModel.js';
 
-class Role extends Model {}
+class Role extends Model { }
 
 Role.init(
   {
@@ -13,6 +14,14 @@ Role.init(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    org_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Organisation,
+        key: "id",
+      }
     },
     active: {
       type: DataTypes.BOOLEAN,
@@ -28,3 +37,9 @@ Role.init(
 );
 
 export default Role
+
+export const createRoleModel = async (role) => await Role.create(role);
+export const findRole = async (condition) => await Role.findOne({ where: condition });
+export const findAllRoles = async (condition) => await Role.findAll({ where: condition });
+export const updateRole = async (data, id) => await Role.update(data, { where: { id: id } });
+export const deleteRole = async (id) => await Role.destroy({ where: { id: id }});

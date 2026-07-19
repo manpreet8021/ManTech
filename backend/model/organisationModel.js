@@ -16,11 +16,12 @@ Organisation.init(
     },
     url: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     active: {
       type: DataTypes.BOOLEAN,
-      allowNull: false
+      allowNull: false,
+      defaultValue: true
     }
   },
   {

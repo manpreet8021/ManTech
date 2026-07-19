@@ -34,3 +34,9 @@ Permission.init(
 );
 
 export default Permission
+
+export const createPermissionModel = async (data) => await Permission.create(data);
+export const findPermission = async (condition) => await Permission.findOne({ where: condition });
+export const findAllPermissions = async (condition) => await Permission.findAll({ where: condition });
+export const updatePermission = async (data, id) => await Permission.update(data, { where: { id: id } });
+export const deletePermission = async (id) => await Permission.destroy({ where: { id: id }});

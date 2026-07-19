@@ -8,7 +8,7 @@ import User from "../model/userModel.js";
 import Role from "../model/roleModel.js";
 import Permission from "../model/permissionModel.js";
 import RolePermission from "../model/rolePermissionModel.js";
-import OrganisationUserRoleMapping from "../model/organisationUserRoleModel.js";
+import UserRoleMapping from "../model/userRoleModel.js";
 
 const connectDb = async () => {
   await sequelize
@@ -20,7 +20,7 @@ const connectDb = async () => {
 
   try {
     await sequelize.query("SET FOREIGN_KEY_CHECKS = 0");
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ alter: true });
     console.log("Database & tables created!");
   } catch (error) {
     console.error("Error syncing database:", error);

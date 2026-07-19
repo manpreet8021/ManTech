@@ -48,3 +48,9 @@ RolePermission.belongsTo(Permission, { foreignKey: 'permission_id' });
 Permission.hasMany(RolePermission, { foreignKey: 'permission_id' });
 
 export default RolePermission
+
+export const createRolePermissionModel = async (data) => await RolePermission.create(data);
+export const findRolePermission = async (condition) => await RolePermission.findOne({ where: condition });
+export const findAllRolePermissions = async (condition) => await RolePermission.findAll({ where: condition });
+export const updateRolePermission = async (data, id) => await RolePermission.update(data, { where: { id: id } });
+export const deleteRolePermission = async (id) => await RolePermission.destroy({ where: { id: id }});
