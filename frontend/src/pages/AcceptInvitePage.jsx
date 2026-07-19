@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { setCredentials } from '../store/authSlice'
+import { setCredentials } from '../store/slice/authSlice'
 import { getCourseById, getInviteById } from '../data/mockData'
 
 export default function AcceptInvitePage() {

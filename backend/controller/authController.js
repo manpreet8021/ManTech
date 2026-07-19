@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import asyncHandler from "../middleware/asyncHandler.js";
 import { createUserModel, findUser } from "../model/userModel.js";
 import { getUserRoleAndPermissions } from "../model/userRoleModel.js";
+import { generateToken } from "../config/jwtToken.js";
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 const SALT_ROUNDS = 10;
@@ -25,9 +26,9 @@ const loginSchema = Joi.object({
 })
 
 const createUser = asyncHandler(async (req, res) => {
-  const {error} = validateUserCreateSchema.validate(req.body, {abortEarly: false})
+  const { error } = validateUserCreateSchema.validate(req.body, { abortEarly: false })
 
-  if(error) {
+  if (error) {
     res.status(400)
     throw new Error(error.message)
   }
@@ -52,16 +53,16 @@ const createUser = asyncHandler(async (req, res) => {
   });
 });
 
-const login = asyncHandler(async(req, res) => {
-  const {error} = loginSchema.validate(req.body, {abortEarly: false})
+const login = asyncHandler(async (req, res) => {
+  const { error } = loginSchema.validate(req.body, { abortEarly: false })
 
-  if(error) {
+  if (error) {
     res.status(400)
     throw new Error(error.message)
   }
 
-  const {email, password} = req.body
-  const user = await findUser({email})
+  const { email, password } = req.body
+  const user = await findUser({ email })
 
   if (!user) {
     res.status(401)
@@ -82,12 +83,20 @@ const login = asyncHandler(async(req, res) => {
 
   const { role, permissions } = await getUserRoleAndPermissions(user.id)
 
-  res.status(200).json({
+  const tokenData = {
     id: user.id,
     name: user.name,
     email: user.email,
     role,
     permissions,
+  }
+
+  res.status(200).json({
+    name: user.name,
+    email: user.email,
+    role,
+    permissions,
+    token: generateToken(tokenData)
   })
 })
 

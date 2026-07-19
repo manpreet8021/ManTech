@@ -20,7 +20,7 @@ const connectDb = async () => {
 
   try {
     await sequelize.query("SET FOREIGN_KEY_CHECKS = 0");
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
     console.log("Database & tables created!");
   } catch (error) {
     console.error("Error syncing database:", error);
