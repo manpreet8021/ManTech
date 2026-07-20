@@ -40,6 +40,6 @@ export default Role
 
 export const createRoleModel = async (role) => await Role.create(role);
 export const findRole = async (condition) => await Role.findOne({ where: condition });
-export const findAllRoles = async (condition) => await Role.findAll({ where: condition });
+export const findAllRoles = async (condition) => await Role.findAll({ where: condition, attributes:["id", "name"] });
 export const updateRole = async (data, id) => await Role.update(data, { where: { id: id } });
 export const deleteRole = async (id) => await Role.destroy({ where: { id: id }});

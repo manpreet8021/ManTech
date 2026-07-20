@@ -14,16 +14,6 @@ const protect = asyncHandler(async(req, res, next) => {
             req.user = user;
             req.tokenPermission = decoded.data.permissions;
 
-            // Multi-tenant: resolve the org from the caller's Origin header
-            // (always present on cross-origin requests) rather than requiring
-            // the frontend to pass it explicitly on every call. Organisation.url
-            // is stored with a trailing slash, Origin never has one, so match both.
-            const origin = req.headers.origin
-            const organisation = origin
-                ? await findOrganisation({ url: { [Op.in]: [origin, `${origin}/`] }, active: true })
-                : null
-            req.org_id = organisation ? organisation.id : null
-
             next();
         } else {
             res.status(401);

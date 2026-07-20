@@ -2,9 +2,11 @@ import { useState } from 'react'
 import UserFormModal from '../components/UserFormModal'
 import { mockUsers } from '../data/mockData'
 import { useGetAllUserQuery } from '../store/slice/api/userApiSlice'
+import { useGetAllRolesQuery } from '../store/slice/api/rolePermissionApiSlice'
 
 export default function UsersPage() {
-  const {data: users, isLoading} = useGetAllUserQuery()
+  const { data: users, isLoading } = useGetAllUserQuery()
+  const { data } = useGetAllRolesQuery()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
 
@@ -19,7 +21,7 @@ export default function UsersPage() {
   }
 
   const handleSubmit = ({ name, email, role }) => {
-    
+
     setModalOpen(false)
   }
 
@@ -64,11 +66,10 @@ export default function UsersPage() {
                 <td className="px-5 py-3 text-slate-500">{user.roles?.map((r) => r.name).join(', ')}</td>
                 <td className="px-5 py-3">
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
-                      user.active
+                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${user.active
                         ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
                         : 'bg-slate-100 text-slate-600 ring-slate-500/20'
-                    }`}
+                      }`}
                   >
                     {user.active ? 'Active' : 'Inactive'}
                   </span>

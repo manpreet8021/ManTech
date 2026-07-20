@@ -4,6 +4,8 @@ import asyncHandler from "../middleware/asyncHandler.js";
 import { createUserModel, findUser } from "../model/userModel.js";
 import { getUserRoleAndPermissions } from "../model/userRoleModel.js";
 import { generateToken } from "../config/jwtToken.js";
+import { findOrganisation } from "../model/organisationModel.js";
+import { Op } from "sequelize";
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 const SALT_ROUNDS = 10;
@@ -21,8 +23,18 @@ const login = asyncHandler(async (req, res) => {
     throw new Error(error.message)
   }
 
+  const origin = req.headers.origin
+  const organisation = origin
+    ? await findOrganisation({ url: { [Op.in]: [origin, `${origin}/`] }, active: true })
+    : null
+
+  if(!organisation) {
+    res.status(401)
+    throw new Error("Invalid email or password")
+  }
+
   const { email, password } = req.body
-  const user = await findUser({ email })
+  const user = await findUser({ email, org_id: organisation.id })
 
   if (!user) {
     res.status(401)

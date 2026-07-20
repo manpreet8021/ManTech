@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit'
 import { apiSlice } from './slice/api/apiSlice'
 import authReducer, { initialState as authInitialState } from './slice/authSlice'
 import { restoreAuthState } from '../utils/restoreAuth'
+import rolePermissionSliceReducer from './slice/rolePermissionSlice'
 
 const restoredAuth = restoreAuthState()
 
@@ -9,6 +10,7 @@ export const store = configureStore({
   reducer: {
     auth: authReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
+    rolePermission: rolePermissionSliceReducer
   },
   preloadedState: restoredAuth
     ? { auth: { ...authInitialState, ...restoredAuth } }

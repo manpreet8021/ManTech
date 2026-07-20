@@ -21,7 +21,7 @@ const rolePermissionValidation = Joi.object({
 })
 
 const getAllRoles = asyncHandler(async(req, res) => {
-    const roles = await findAllRoles({active: true, org_id: req.org_id})
+    const roles = await findAllRoles({active: true, org_id: req.user.org_id})
     res.status(200).json(roles)
 })
 

@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react'
 import Modal from './Modal'
-import { mockRoles } from '../data/mockData'
+import { useSelector } from 'react-redux'
 
 export default function UserFormModal({ open, onClose, onSubmit, user }) {
   const isEdit = Boolean(user)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState(mockRoles[0])
+  const [role, setRole] = useState('')
+  const roles = useSelector(state => state.rolePermission.roles)
 
   useEffect(() => {
     if (open) {
       setName(user?.name ?? '')
       setEmail(user?.email ?? '')
-      setRole(user?.role ?? mockRoles[0])
+      setRole(user?.role ?? '')
     }
   }, [open, user])
 
@@ -21,7 +22,7 @@ export default function UserFormModal({ open, onClose, onSubmit, user }) {
     // TODO: replace with a real RTK Query mutation. Adding a user should
     // invite them by email (same pattern as student invites) and assign the
     // chosen role once they accept; editing updates the existing user.
-    onSubmit({ name, email, role })
+    // onSubmit({ name, email, role })
   }
 
   return (
@@ -73,9 +74,9 @@ export default function UserFormModal({ open, onClose, onSubmit, user }) {
             onChange={(e) => setRole(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 capitalize focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            {mockRoles.map((r) => (
-              <option key={r} value={r} className="capitalize">
-                {r}
+            {roles && roles.map((r) => (
+              <option key={r.id} value={r.id} className="capitalize">
+                {r.name}
               </option>
             ))}
           </select>
