@@ -22,12 +22,10 @@ User.init(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: 'email_org_id'
     },
     org_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      unique: 'email_org_id',
       references: {
         model: Organisation,
         key: 'id',
@@ -54,9 +52,23 @@ User.init(
 User.belongsTo(Organisation, { foreignKey: 'org_id' });
 Organisation.hasMany(User, { foreignKey: 'org_id' });
 
+// Uniqueness of (email, org_id) is enforced in the DB, but only among active
+// users — soft-deleted (active=false) rows must not permanently block that
+// email from being reused in the same org. MySQL has no partial unique index,
+// so this is done via a generated `active_email` column (email when active,
+// NULL otherwise — NULLs don't collide in a unique index) with a unique index
+// on (active_email, org_id). That column/index lives only in the DB — see the
+// one-off migration that created it — and is deliberately not declared as a
+// Sequelize attribute here, since the app should never read or write it directly.
+
 export default User
 
 export const createUserModel = async (data) => await User.create(data);
 export const findUser = async (condition) => await User.findOne({ where: condition });
-export const updateUser = async (data, id) => await User.update(data, { where: { id: id } });
+export const updateUserModel = async (data, id) => await User.update(data, { where: { id: id, org_id: data.org_id } });
 export const deleteUser = async (id) => await User.destroy({ where: { id: id } });
+
+// No org constraint on purpose: this backs password-reset, which runs before
+// the caller has any session — a verified, signed reset token (tied to this
+// exact user id) is the authorization proof here, not an org-scoped session.
+export const setUserPassword = async (id, hashedPassword) => await User.update({ password: hashedPassword }, { where: { id } });

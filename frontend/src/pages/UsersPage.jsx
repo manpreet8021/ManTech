@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import UserFormModal from '../components/UserFormModal'
-import { mockUsers } from '../data/mockData'
-import { useGetAllUserQuery } from '../store/slice/api/userApiSlice'
+import DeleteConfirmModal from '../components/DeleteConfirmModal'
+import { useGetAllUserQuery, useDeleteUserMutation } from '../store/slice/api/userApiSlice'
 import { useGetAllRolesQuery } from '../store/slice/api/rolePermissionApiSlice'
+import { useSelector } from 'react-redux'
 
 export default function UsersPage() {
-  const { data: users, isLoading } = useGetAllUserQuery()
-  const { data } = useGetAllRolesQuery()
+  useGetAllUserQuery()
+  useGetAllRolesQuery()
+  const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState(null)
+  const [deletingUser, setDeletingUser] = useState(null)
+  const users = useSelector(state => state.user.users)
 
   const openAddModal = () => {
     setEditingUser(null)
@@ -20,13 +24,21 @@ export default function UsersPage() {
     setModalOpen(true)
   }
 
-  const handleSubmit = ({ name, email, role }) => {
-
+  const handleSubmit = () => {
     setModalOpen(false)
   }
 
   const handleDelete = (user) => {
-    if (!window.confirm(`Remove ${user.name}?`)) return
+    setDeletingUser(user)
+  }
+
+  const confirmDelete = async () => {
+    try {
+      await deleteUser(deletingUser.id).unwrap()
+      setDeletingUser(null)
+    } catch {
+      // TODO: surface an error message if this ever fails
+    }
   }
 
   return (
@@ -67,8 +79,8 @@ export default function UsersPage() {
                 <td className="px-5 py-3">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${user.active
-                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
-                        : 'bg-slate-100 text-slate-600 ring-slate-500/20'
+                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+                      : 'bg-slate-100 text-slate-600 ring-slate-500/20'
                       }`}
                   >
                     {user.active ? 'Active' : 'Inactive'}
@@ -107,6 +119,15 @@ export default function UsersPage() {
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         user={editingUser}
+      />
+
+      <DeleteConfirmModal
+        open={Boolean(deletingUser)}
+        onClose={() => setDeletingUser(null)}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete user"
+        message={deletingUser ? `Are you sure you want to remove ${deletingUser.name}? This can't be undone.` : ''}
       />
     </div>
   )

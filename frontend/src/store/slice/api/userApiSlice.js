@@ -14,10 +14,23 @@ const userApiSlice = apiSlice.injectEndpoints({
                 url: 'user/',
                 method: 'GET'
             })
+        }),
+        updateUser: builder.mutation({
+            query: (data) => ({
+                url: 'user/',
+                method: 'PUT',
+                body: data
+            })
+        }),
+        deleteUser: builder.mutation({
+            query: (id) => ({
+                url: `user/${id}`,
+                method: 'DELETE'
+            })
         })
     })
 })
 
-export const { useCreateUserMutation, useGetAllUserQuery } = userApiSlice;
+export const { useCreateUserMutation, useGetAllUserQuery, useUpdateUserMutation, useDeleteUserMutation } = userApiSlice;
 
 export default userApiSlice

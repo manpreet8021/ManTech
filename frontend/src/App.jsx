@@ -8,6 +8,7 @@ import CoursesListPage from './pages/CoursesListPage'
 import CourseDetailPage from './pages/CourseDetailPage'
 import UsersPage from './pages/UsersPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import RequirePermission from './components/RequirePermission'
 import RequireAuth from './components/RequireAuth'
 import RootRedirect from './components/RootRedirect'
@@ -18,6 +19,7 @@ export default function App() {
       <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/invite/:token" element={<AcceptInvitePage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/student" element={<StudentDashboardPage />} />
       <Route path="/student/videos/:videoId" element={<VideoPlayerPage />} />
 

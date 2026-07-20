@@ -55,6 +55,7 @@ export const createUserRole = async (data) => await UserRoleMapping.create(data)
 export const findUserRole = async (condition) => await UserRoleMapping.findOne({ where: condition });
 export const updateUserRole = async (data, id) => await UserRoleMapping.update(data, { where: { id: id } });
 export const deleteUserRole = async (id) => await UserRoleMapping.destroy({ where: { id: id } });
+export const deleteUserRoleByUserId = async (id) => await UserRoleMapping.destroy({ where: { user_id: id } });
 
 export const findAllUser = async (condition) => await User.findAll({
   where: condition,
@@ -77,7 +78,6 @@ export const findAllUser = async (condition) => await User.findAll({
   }
 });
 
-// Returns { role, permissions } for a user, e.g. { role: "teacher", permissions: [{resource:"teacher",action:"write"}, ...] }
 export const getUserRoleAndPermissions = async (userId) => {
   const mapping = await UserRoleMapping.findOne({
     where: { user_id: userId, active: true },

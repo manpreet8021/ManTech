@@ -19,3 +19,7 @@ export const acceptInviteSchema = z.object({
   name: z.string().min(1, 'Full name is required'),
   password: passwordSchema,
 })
+
+export const resetPasswordSchema = z.object({
+  password: passwordSchema,
+})
