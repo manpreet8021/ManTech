@@ -115,6 +115,7 @@ export default function UsersPage() {
       </div>
 
       <UserFormModal
+        key={editingUser?.id ?? 'new'}
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}

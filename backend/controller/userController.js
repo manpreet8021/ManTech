@@ -16,10 +16,12 @@ const validateAddUser = Joi.object({
   role_id: Joi.number().positive().required()
 })
 
+// Email is set once at invite time and can't be edited afterwards — it's the
+// key an admin uses to find/re-invite a user, and changing it silently would
+// also desync the active-email uniqueness the DB enforces per org.
 const validateUpdateUser = Joi.object({
   id: Joi.number().positive().required(),
   name: Joi.string().required(),
-  email: Joi.string().email().required(),
   role_id: Joi.number().positive().required()
 })
 
@@ -93,8 +95,8 @@ const createUser = asyncHandler(async (req, res) => {
 })
 
 const updateUser = asyncHandler(async (req, res) => {
-  const { id, name, email, role: role_id } = req.body
-  const { error } = validateUpdateUser.validate({ id, name, email, role_id }, { abortEarly: false })
+  const { id, name, role: role_id } = req.body
+  const { error } = validateUpdateUser.validate({ id, name, role_id }, { abortEarly: false })
 
   if (error) {
     res.status(400)
