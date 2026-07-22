@@ -4,7 +4,9 @@ import { useSelector } from 'react-redux'
 import StatusBadge from '../components/StatusBadge'
 import AddVideoModal from '../components/AddVideoModal'
 import InviteStudentModal from '../components/InviteStudentModal'
-import { getCourseById, getVideosForCourse, getInvitesForCourse } from '../data/mockData'
+import { getInvitesForCourse } from '../data/mockData'
+import { useGetAllCourseQuery } from '../store/slice/api/courseApiSlice'
+import { useCreateVideoMutation, useGetAllVideosQuery } from '../store/slice/api/videoApiSlice'
 import { getYoutubeThumbnail } from '../utils/youtube'
 import { hasResource } from '../utils/permissions'
 
@@ -22,29 +24,29 @@ export default function CourseDetailPage() {
   const { courseId } = useParams()
   const permissions = useSelector((state) => state.auth.permissions)
   const canInvite = hasResource(permissions, 'invite')
-  // TODO: replace with real RTK Query hooks, e.g. useGetCourseQuery(courseId) / useGetVideosQuery({ courseId })
-  const course = getCourseById(courseId)
+  useGetAllCourseQuery()
+  const course = useSelector((state) => state.course.course.find((c) => String(c.id) === courseId))
+  const { data: videos = [] } = useGetAllVideosQuery(courseId, { skip: !course })
+  const [createVideo, { isLoading: isAddingVideo, error: addVideoError }] = useCreateVideoMutation()
   const [activeTab, setActiveTab] = useState('videos')
-  const [videos, setVideos] = useState(() => getVideosForCourse(courseId))
   const [invites, setInvites] = useState(() => getInvitesForCourse(courseId))
   const [addVideoOpen, setAddVideoOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
 
-  const handleAddVideo = ({ name, url, pdf_name }) => {
-    // TODO: replace with a real RTK Query mutation; the new video should
-    // start life as "pending" until the download scheduler picks it up.
-    setVideos((prev) => [
-      ...prev,
-      {
-        video_id: `temp-${Date.now()}`,
-        course_id: courseId,
-        name,
-        url,
-        pdf_name,
-        status: 'pending',
-      },
-    ])
-    setAddVideoOpen(false)
+  const handleAddVideo = async ({ name, url, pdfFile }) => {
+    const formData = new FormData()
+    formData.append('name', name)
+    formData.append('url', url)
+    formData.append('course_id', course.id)
+    if (pdfFile) formData.append('pdf', pdfFile)
+
+    try {
+      await createVideo(formData).unwrap()
+      setAddVideoOpen(false)
+      return true
+    } catch {
+      return false
+    }
   }
 
   const handleInvite = ({ email }) => {
@@ -86,7 +88,7 @@ export default function CourseDetailPage() {
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{course.title}</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{course.name}</h1>
           {course.description && <p className="mt-1 text-sm text-slate-500">{course.description}</p>}
         </div>
         {(activeTab === 'videos' || canInvite) && (
@@ -131,9 +133,10 @@ export default function CourseDetailPage() {
             const thumbnail = getYoutubeThumbnail(video.url)
 
             return (
-              <div
-                key={video.video_id}
-                className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+              <Link
+                key={video.id}
+                to={`/courses/${courseId}/videos/${video.id}`}
+                className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-indigo-200 hover:shadow-md"
               >
                 <div className="h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-slate-100">
                   {thumbnail && (
@@ -145,7 +148,7 @@ export default function CourseDetailPage() {
                   <p className="truncate text-sm font-medium text-slate-900">{video.name}</p>
                   <div className="mt-1.5 flex items-center gap-3">
                     <StatusBadge status={video.status} />
-                    {video.pdf_name && (
+                    {video.hasPdf && (
                       <span className="flex items-center gap-1 text-xs text-slate-400">
                         <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
                           <path
@@ -154,12 +157,12 @@ export default function CourseDetailPage() {
                             clipRule="evenodd"
                           />
                         </svg>
-                        {video.pdf_name}
+                        Lecture notes
                       </span>
                     )}
                   </div>
                 </div>
-              </div>
+              </Link>
             )
           })}
         </div>
@@ -189,7 +192,13 @@ export default function CourseDetailPage() {
         </div>
       )}
 
-      <AddVideoModal open={addVideoOpen} onClose={() => setAddVideoOpen(false)} onAdd={handleAddVideo} />
+      <AddVideoModal
+        open={addVideoOpen}
+        onClose={() => setAddVideoOpen(false)}
+        onAdd={handleAddVideo}
+        isLoading={isAddingVideo}
+        error={addVideoError}
+      />
       <InviteStudentModal open={inviteOpen} onClose={() => setInviteOpen(false)} onInvite={handleInvite} />
     </div>
   )

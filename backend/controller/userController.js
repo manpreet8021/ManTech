@@ -3,17 +3,20 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import asyncHandler from "../middleware/asyncHandler.js";
 import { createUserModel, updateUserModel } from "../model/userModel.js";
-import { createUserRole, deleteUserRoleByUserId, findAllUser } from "../model/userRoleModel.js";
+import { createUserRole, deleteUserRoleByUserId, findAllUser, findUsersByRoleName } from "../model/userRoleModel.js";
 import { generatePasswordResetToken } from "../config/jwtToken.js";
 import { sendMail } from "../config/mailer.js";
 import { createPasswordReset, hashToken } from "../model/passwordResetModel.js";
+import { createManagerTeacherMapping, deleteManagerTeacherMappingByTeacherId } from "../model/managerTeacherModel.js";
 
 const SALT_ROUNDS = 10;
+const MANAGER_ROLE_NAME = "Manager";
 
 const validateAddUser = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
-  role_id: Joi.number().positive().required()
+  role_ids: Joi.array().items(Joi.number().positive()).min(1).required(),
+  manager_id: Joi.number().positive().allow(null).default(null),
 })
 
 // Email is set once at invite time and can't be edited afterwards — it's the
@@ -22,16 +25,18 @@ const validateAddUser = Joi.object({
 const validateUpdateUser = Joi.object({
   id: Joi.number().positive().required(),
   name: Joi.string().required(),
-  role_id: Joi.number().positive().required()
+  role_ids: Joi.array().items(Joi.number().positive()).min(1).required(),
+  manager_id: Joi.number().positive().allow(null).default(null),
 })
 
-const shapeUser = (user) => {
+const shapeUser = (user, managerId = null) => {
   const data = user.toJSON()
   return {
     id: data.id,
     name: data.name,
     email: data.email,
     active: data.active,
+    managerId,
     roles: data.UserRoleMappings.map((mapping) => ({
       id: mapping.Role.id,
       name: mapping.Role.name,
@@ -41,12 +46,17 @@ const shapeUser = (user) => {
 
 const getAllUser = asyncHandler(async (req, res) => {
   const users = await findAllUser({ org_id: req.user.org_id })
-  res.status(200).json(users.map(shapeUser))
+  res.status(200).json(users.map((u) => shapeUser(u)))
+})
+
+const getAllManagers = asyncHandler(async (req, res) => {
+  const managers = await findUsersByRoleName(req.user.org_id, MANAGER_ROLE_NAME)
+  res.status(200).json(managers.map((m) => ({ id: m.id, name: m.name, email: m.email })))
 })
 
 const createUser = asyncHandler(async (req, res) => {
-  const { name, email, role: role_id } = req.body
-  const { error } = validateAddUser.validate({ name, email, role_id }, { abortEarly: false })
+  const { name, email, roles: role_ids, managerId: manager_id } = req.body
+  const { error, value } = validateAddUser.validate({ name, email, role_ids, manager_id }, { abortEarly: false })
 
   if (error) {
     res.status(400)
@@ -67,7 +77,13 @@ const createUser = asyncHandler(async (req, res) => {
     throw err
   }
 
-  await createUserRole({ role_id, user_id: newUser.id })
+  for (const role_id of value.role_ids) {
+    await createUserRole({ role_id, user_id: newUser.id })
+  }
+
+  if (value.manager_id) {
+    await createManagerTeacherMapping({ manager_id: value.manager_id, teacher_id: newUser.id })
+  }
 
   // Best-effort: a failed email shouldn't undo the user that was just
   // created — the admin can always resend/regenerate a reset link later.
@@ -91,19 +107,19 @@ const createUser = asyncHandler(async (req, res) => {
   // this straight into its cache/table instead of refetching the whole list.
   const [createdUser] = await findAllUser({ id: newUser.id, org_id: req.user.org_id })
 
-  res.status(201).json(shapeUser(createdUser))
+  res.status(201).json(shapeUser(createdUser, value.manager_id))
 })
 
 const updateUser = asyncHandler(async (req, res) => {
-  const { id, name, role: role_id } = req.body
-  const { error } = validateUpdateUser.validate({ id, name, role_id }, { abortEarly: false })
+  const { id, name, roles: role_ids, managerId: manager_id } = req.body
+  const { error, value } = validateUpdateUser.validate({ id, name, role_ids, manager_id }, { abortEarly: false })
 
   if (error) {
     res.status(400)
     throw new Error(error.message)
   }
 
-  const [affectedCount] = await updateUserModel({ name, org_id: req.user.org_id }, id)
+  const [affectedCount] = await updateUserModel({ name, org_id: req.user.org_id }, value.id)
 
   if (affectedCount === 0) {
     // Either no such user, or it belongs to a different org — stop here,
@@ -113,11 +129,18 @@ const updateUser = asyncHandler(async (req, res) => {
     throw new Error("User not found")
   }
 
-  await deleteUserRoleByUserId(id)
-  await createUserRole({ role_id, user_id: id })
+  await deleteUserRoleByUserId(value.id)
+  for (const role_id of value.role_ids) {
+    await createUserRole({ role_id, user_id: value.id })
+  }
 
-  const [updatedUser] = await findAllUser({ id, org_id: req.user.org_id })
-  res.status(200).json(shapeUser(updatedUser))
+  await deleteManagerTeacherMappingByTeacherId(value.id)
+  if (value.manager_id) {
+    await createManagerTeacherMapping({ manager_id: value.manager_id, teacher_id: value.id })
+  }
+
+  const [updatedUser] = await findAllUser({ id: value.id, org_id: req.user.org_id })
+  res.status(200).json(shapeUser(updatedUser, value.manager_id))
 })
 
 const deleteUser = asyncHandler(async (req, res) => {
@@ -133,4 +156,4 @@ const deleteUser = asyncHandler(async (req, res) => {
   res.status(200).json({ id: Number(id) })
 })
 
-export { createUser, getAllUser, updateUser, deleteUser }
+export { createUser, getAllUser, getAllManagers, updateUser, deleteUser }

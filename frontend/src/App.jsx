@@ -6,6 +6,7 @@ import AppLayout from './layouts/AppLayout'
 import DashboardPage from './pages/DashboardPage'
 import CoursesListPage from './pages/CoursesListPage'
 import CourseDetailPage from './pages/CourseDetailPage'
+import VideoDetailPage from './pages/VideoDetailPage'
 import UsersPage from './pages/UsersPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -49,9 +50,17 @@ export default function App() {
           }
         />
         <Route
+          path="/courses/:courseId/videos/:videoId"
+          element={
+            <RequirePermission resource="course">
+              <VideoDetailPage />
+            </RequirePermission>
+          }
+        />
+        <Route
           path="/users"
           element={
-            <RequirePermission resource="user">
+            <RequirePermission resource="users">
               <UsersPage />
             </RequirePermission>
           }

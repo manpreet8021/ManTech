@@ -3,16 +3,20 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSelector } from 'react-redux'
 import Modal from './Modal'
-import { useCreateUserMutation, useUpdateUserMutation } from '../store/slice/api/userApiSlice'
+import { useCreateUserMutation, useUpdateUserMutation, useGetAllManagersQuery } from '../store/slice/api/userApiSlice'
 import { userCreateSchema, userEditSchema } from '../validation/userSchemas'
 
 export default function UserFormModal({ open, onClose, onSubmit, user }) {
   const isEdit = Boolean(user)
   const roles = useSelector(state => state.rolePermission.roles)
+  const { data: managers } = useGetAllManagersQuery()
   const [createUser, { isLoading: isCreating, error: createError }] = useCreateUserMutation()
   const [updateUser, { isLoading: isUpdating, error: updateError }] = useUpdateUserMutation()
   const isLoading = isCreating || isUpdating
   const error = createError || updateError
+
+  // A user can't be their own manager.
+  const managerOptions = (managers ?? []).filter((m) => m.id !== user?.id)
 
   const {
     register,
@@ -26,17 +30,23 @@ export default function UserFormModal({ open, onClose, onSubmit, user }) {
       reset({
         name: user?.name ?? '',
         email: user?.email ?? '',
-        role: user?.roles?.[0]?.id != null ? String(user.roles[0].id) : '',
+        roles: user?.roles?.map((r) => String(r.id)) ?? [],
+        managerId: user?.managerId != null ? String(user.managerId) : '',
       })
     }
   }, [open, user, reset])
 
   const onFormSubmit = async (data) => {
+    const payload = {
+      ...data,
+      managerId: data.managerId ? Number(data.managerId) : null,
+    }
+
     try {
       if (user?.id) {
-        await updateUser({ ...data, id: user.id }).unwrap()
+        await updateUser({ ...payload, id: user.id }).unwrap()
       } else {
-        await createUser(data).unwrap()
+        await createUser(payload).unwrap()
       }
       onSubmit(data)
     } catch {
@@ -97,29 +107,40 @@ export default function UserFormModal({ open, onClose, onSubmit, user }) {
         </div>
 
         <div>
-          <label htmlFor="user-role" className="mb-1.5 block text-sm font-medium text-slate-700">
-            Role
+          <span className="mb-1.5 block text-sm font-medium text-slate-700">Roles</span>
+          <div className="space-y-1.5">
+            {roles && roles.map((r) => (
+              <label key={r.id} className="flex items-center gap-2 text-sm text-slate-700 capitalize">
+                <input
+                  type="checkbox"
+                  value={r.id}
+                  {...register('roles')}
+                  className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                {r.name}
+              </label>
+            ))}
+          </div>
+          {errors.roles && <p className="mt-1 text-xs text-rose-500">{errors.roles.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="user-manager" className="mb-1.5 block text-sm font-medium text-slate-700">
+            Reports to
           </label>
           <select
-            id="user-role"
+            id="user-manager"
             defaultValue=""
-            {...register('role')}
-            className={`w-full rounded-lg border px-3 py-2 text-sm text-slate-900 capitalize focus:outline-none focus:ring-1 ${
-              errors.role
-                ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-500'
-                : 'border-slate-300 focus:border-indigo-500 focus:ring-indigo-500'
-            }`}
+            {...register('managerId')}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-1 focus:border-indigo-500 focus:ring-indigo-500"
           >
-            <option value="" disabled>
-              Select a role
-            </option>
-            {roles && roles.map((r) => (
-              <option key={r.id} value={r.id} className="capitalize">
-                {r.name}
+            <option value="">No manager</option>
+            {managerOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
               </option>
             ))}
           </select>
-          {errors.role && <p className="mt-1 text-xs text-rose-500">{errors.role.message}</p>}
         </div>
 
         {error && (

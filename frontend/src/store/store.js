@@ -4,6 +4,7 @@ import authReducer, { initialState as authInitialState } from './slice/authSlice
 import { restoreAuthState } from '../utils/restoreAuth'
 import rolePermissionSliceReducer from './slice/rolePermissionSlice'
 import userSliceReducer from './slice/userSlice'
+import courseSliceReducer from './slice/courseSlice'
 
 const restoredAuth = restoreAuthState()
 
@@ -12,7 +13,8 @@ export const store = configureStore({
     auth: authReducer,
     [apiSlice.reducerPath]: apiSlice.reducer,
     rolePermission: rolePermissionSliceReducer,
-    user: userSliceReducer
+    user: userSliceReducer,
+    course: courseSliceReducer
   },
   preloadedState: restoredAuth
     ? { auth: { ...authInitialState, ...restoredAuth } }

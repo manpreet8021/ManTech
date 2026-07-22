@@ -9,6 +9,9 @@ import Role from "../model/roleModel.js";
 import Permission from "../model/permissionModel.js";
 import RolePermission from "../model/rolePermissionModel.js";
 import UserRoleMapping from "../model/userRoleModel.js";
+import Course from "../model/courseModel.js";
+import ManagerTeacherMapping from "../model/managerTeacherModel.js";
+import CourseManagerMapping from "../model/courseManagerModel.js";
 
 const connectDb = async () => {
   await sequelize

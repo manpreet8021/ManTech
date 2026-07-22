@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { getYoutubeVideoId } from '../utils/youtube'
 
-export default function AddVideoModal({ open, onClose, onAdd }) {
+export default function AddVideoModal({ open, onClose, onAdd, isLoading, error }) {
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [pdfFile, setPdfFile] = useState(null)
@@ -20,14 +20,12 @@ export default function AddVideoModal({ open, onClose, onAdd }) {
     onClose()
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!getYoutubeVideoId(url)) return
 
-    // TODO: replace with a real RTK Query mutation, sending multipart/form-data
-    // (name, url, pdf file) to the Node backend, e.g. addVideo(formData)
-    onAdd({ name, url, pdf_name: pdfFile?.name ?? null })
-    reset()
+    const submitted = await onAdd({ name, url, pdfFile })
+    if (submitted) reset()
   }
 
   return (
@@ -90,6 +88,12 @@ export default function AddVideoModal({ open, onClose, onAdd }) {
           />
         </div>
 
+        {error && (
+          <p className="text-sm text-rose-500">
+            {error.data?.message || 'Something went wrong. Please try again.'}
+          </p>
+        )}
+
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
@@ -100,10 +104,10 @@ export default function AddVideoModal({ open, onClose, onAdd }) {
           </button>
           <button
             type="submit"
-            disabled={!url || !urlLooksValid}
+            disabled={!url || !urlLooksValid || isLoading}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Add video
+            {isLoading ? 'Adding…' : 'Add video'}
           </button>
         </div>
       </form>

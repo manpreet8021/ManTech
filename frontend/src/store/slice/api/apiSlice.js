@@ -30,6 +30,6 @@ const baseQueryWithAuthHandling = async (args, api, extraOptions) => {
 
 export const apiSlice = createApi({
   baseQuery: baseQueryWithAuthHandling,
-  tagTypes: ['Video', 'Quiz'],
+  tagTypes: ['Video', 'Quiz', 'User', 'Course'],
   endpoints: () => ({}),
 })

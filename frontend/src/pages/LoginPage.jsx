@@ -38,6 +38,7 @@ export default function LoginPage() {
           permissions: response.permissions,
         }),
       )
+      console.log(response.permissions[0].resource.toLowerCase())
 
       navigate(`/${response.permissions[0].resource.toLowerCase()}`)
     } catch {

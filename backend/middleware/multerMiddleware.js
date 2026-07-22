@@ -5,7 +5,9 @@ const diskStorage = multer.diskStorage({
         cb(null, './temp')
     },
     filename: function(req, file, cb) {
-        cb(null, new Date() + file.originalname)
+        // Date.now() (not new Date().toString()) — the latter contains colons,
+        // which are illegal in Windows filenames and made every upload fail.
+        cb(null, `${Date.now()}-${file.originalname}`)
     }
 })
 

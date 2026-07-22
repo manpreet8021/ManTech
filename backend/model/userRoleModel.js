@@ -78,11 +78,16 @@ export const findAllUser = async (condition) => await User.findAll({
   }
 });
 
+// Users can hold more than one active role (e.g. Teacher + Manager), so this
+// has to look across ALL of a user's active roles, not just one — a single
+// findOne here would silently ignore permissions granted only via a second role.
 export const getUserRoleAndPermissions = async (userId) => {
-  const mapping = await UserRoleMapping.findOne({
+  const mappings = await UserRoleMapping.findAll({
     where: { user_id: userId, active: true },
     include: {
       model: Role,
+      where: { active: true },
+      required: true,
       include: {
         model: RolePermission,
         where: { active: true },
@@ -92,16 +97,43 @@ export const getUserRoleAndPermissions = async (userId) => {
     },
   });
 
-  if (!mapping || !mapping.Role) {
+  if (!mappings.length) {
     return { role: null, permissions: [] };
   }
 
-  const permissions = (mapping.Role.RolePermissions || [])
-    .filter((rp) => rp.Permission)
-    .map((rp) => ({
-      resource: rp.Permission.resource,
-      action: rp.Permission.action,
-    }));
+  const permissionMap = new Map()
+  for (const mapping of mappings) {
+    for (const rp of mapping.Role.RolePermissions || []) {
+      if (!rp.Permission) continue
+      const key = `${rp.Permission.resource}:${rp.Permission.action}`
+      if (!permissionMap.has(key)) {
+        permissionMap.set(key, { resource: rp.Permission.resource, action: rp.Permission.action })
+      }
+    }
+  }
 
-  return { role: mapping.Role.name, permissions };
+  return {
+    role: mappings.map((m) => m.Role.name).join(', '),
+    permissions: Array.from(permissionMap.values()),
+  };
 };
+
+// Users who hold a role with this name (case-insensitive) within the org —
+// used to populate the "assign a manager" pickers, since Manager is just a
+// role like any other, not a separate flag on User.
+export const findUsersByRoleName = async (orgId, roleName) => await User.findAll({
+  where: { org_id: orgId, active: true },
+  attributes: ["id", "name", "email"],
+  include: {
+    model: UserRoleMapping,
+    where: { active: true },
+    required: true,
+    attributes: [],
+    include: {
+      model: Role,
+      where: { active: true, name: roleName },
+      required: true,
+      attributes: [],
+    },
+  },
+});
