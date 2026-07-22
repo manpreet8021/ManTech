@@ -9,7 +9,8 @@ class VideoStatus(Base):
     video_id = Column(Integer, ForeignKey("video.id"), unique=True, nullable=False)
     step = Column(String(20), nullable=False)
     status = Column(String(20), nullable=False)
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    createdAt = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    updatedAt = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 def get_processing_video_ids(db: Session):
     return db.query(VideoStatus.video_id).filter(VideoStatus.status == "processing")
@@ -17,7 +18,7 @@ def get_processing_video_ids(db: Session):
 def start_step(db: Session, video_id: int, step: str) -> VideoStatus:
     status_row = db.query(VideoStatus).filter(VideoStatus.video_id == video_id).one_or_none()
     if status_row is None:
-        status_row = VideoStatus(video_id=video_id, step=step, status="processing")
+        status_row = VideoStatus(video_id=video_id, step=step, status="processing", createdAt=func.now(), updatedAt=func.now())
         db.add(status_row)
     else:
         status_row.step = step

@@ -1,7 +1,8 @@
 from db import Base
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy.orm import relationship, Session
+from sqlalchemy.sql import func
 
 class Transcribe(Base):
     __tablename__ = "transcribe"
@@ -13,6 +14,15 @@ class Transcribe(Base):
     summary = Column(LONGTEXT, nullable=True)
     summary_chunk_progress = Column(LONGTEXT, nullable=True)
     video_id = Column(Integer, ForeignKey('video.id'), unique=True, nullable=False)
+    # Columns already exist on the live table (created by the Node side's
+    # Sequelize `timestamps: true`) as NOT NULL with no SQL-level default —
+    # Sequelize supplies the value itself on every write rather than relying
+    # on a DB DEFAULT clause, so these use SQLAlchemy's `default` (computed
+    # here and sent in the INSERT), not `server_default`. `onupdate` fires
+    # automatically on every commit that changes this row, the same
+    # mechanism model/status.py already uses for its own updated_at.
+    createdAt = Column(DateTime, nullable=False, default=func.now())
+    updatedAt = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     video = relationship("Video", back_populates="transcribe")
 
