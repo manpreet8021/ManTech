@@ -10,10 +10,10 @@ app = FastAPI()
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(process_pending_download, "interval", minutes=5, id="process_pending_download")
-scheduler.add_job(process_pending_transcription, "interval", minutes=5, id="process_pending_transcription")
-scheduler.add_job(process_pending_translation, "interval", minutes=5, id="process_pending_translation")
-scheduler.add_job(process_pending_summary, "interval", minutes=5, id="process_pending_summary")
-scheduler.add_job(process_pending_quiz, "interval", minutes=5, id="process_pending_quiz")
+scheduler.add_job(process_pending_transcription, "interval", minutes=2, id="process_pending_transcription")
+scheduler.add_job(process_pending_translation, "interval", minutes=1, id="process_pending_translation")
+scheduler.add_job(process_pending_summary, "interval", minutes=1, id="process_pending_summary")
+scheduler.add_job(process_pending_quiz, "interval", minutes=1, id="process_pending_quiz")
 
 @app.on_event("startup")
 def start_scheduler():

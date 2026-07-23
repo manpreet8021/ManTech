@@ -198,7 +198,7 @@ def generate_quiz(summary: str, num_questions: int = QUIZ_QUESTION_COUNT) -> lis
             Rules:
             - Every question and its correct answer must be fully supported by the summary — do not invent facts, numbers, or claims that aren't in it.
             - Questions may be worded differently from the summary (don't just copy sentences), but the concept being tested must be covered in the summary.
-            - Provide exactly 4 options per question, with exactly one correct answer.
+            - Always Provide exactly 4 options per question, with exactly one correct answer.
             - Return ONLY a JSON array, no prose, no markdown code fences.
             - Each item must have exactly these keys: "question" (string), "options" (array of 4 strings), "answer" (string that exactly matches one of the options).
             - Write any math in plain text (e.g. x^2, P(x) = Bx + C). Do not use LaTeX notation or backslash commands (no \\(, \\), \\neq, \\sum, etc.) — they break JSON parsing.
@@ -215,25 +215,48 @@ def generate_quiz(summary: str, num_questions: int = QUIZ_QUESTION_COUNT) -> lis
 
         try:
             questions = json.loads(content)
-            _validate_quiz_questions(questions)
-            return questions
-        except (json.JSONDecodeError, ValueError) as e:
-            last_error = e
+        except json.JSONDecodeError as e:
+            questions = []
+            for obj_text in _extract_json_objects(content):
+                try:
+                    questions.append(json.loads(obj_text))
+                except json.JSONDecodeError:
+                    continue
+            if not questions:
+                last_error = e
+                continue
+
+        valid_questions = _filter_valid_quiz_questions(questions)
+        if valid_questions:
+            return valid_questions
+
+        last_error = ValueError("quiz response had no valid questions")
 
     raise ValueError(f"LLM did not return a valid quiz after {MAX_RETRIES} attempts") from last_error
 
 def _sanitize_json_escapes(text: str) -> str:
-    # LLMs occasionally echo LaTeX (\(, \), \neq, \sum, ...) inside JSON string
-    # values despite being told not to. Those backslashes aren't valid JSON
-    # escapes and make json.loads raise "Invalid \escape" — double them up
-    # (except ones already forming a real JSON escape) so parsing still works.
     return re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', text)
 
 def _strip_trailing_commas(text: str) -> str:
-    # LLMs sometimes leave a trailing comma before a closing ] or } (valid in
-    # JS/JSON5, not in strict JSON) — e.g. [..., {...},] — which json.loads
-    # rejects as "Illegal trailing comma". Strip it before parsing.
     return re.sub(r',(\s*[\]}])', r'\1', text)
+
+def _extract_json_objects(text: str) -> list[str]:
+    objects = []
+    depth = 0
+    start = None
+
+    for i, ch in enumerate(text):
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                objects.append(text[start:i + 1])
+                start = None
+
+    return objects
 
 def _strip_json_fences(text: str) -> str:
     if text.startswith("```"):
@@ -242,14 +265,18 @@ def _strip_json_fences(text: str) -> str:
             text = text.rsplit("```", 1)[0]
     return text.strip()
 
-def _validate_quiz_questions(questions):
-    if not isinstance(questions, list) or not questions:
-        raise ValueError("quiz response was not a non-empty list")
+def _filter_valid_quiz_questions(questions):
+    if not isinstance(questions, list):
+        return []
 
+    valid = []
     for q in questions:
         if not isinstance(q, dict) or not all(k in q for k in ("question", "options", "answer")):
-            raise ValueError("quiz question missing required keys")
+            continue
         if not isinstance(q["options"], list) or len(q["options"]) != 4:
-            raise ValueError("quiz question must have exactly 4 options")
+            continue
         if q["answer"] not in q["options"]:
-            raise ValueError("quiz answer must match one of the options")
+            continue
+        valid.append(q)
+
+    return valid
