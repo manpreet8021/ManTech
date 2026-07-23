@@ -3,11 +3,10 @@ import re
 import time
 
 import yt_dlp
-import torch
 import requests
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tqdm import tqdm
+from faster_whisper import WhisperModel, BatchedInferencePipeline
 
 # Ollama's OpenAI-compatible endpoint (/v1/chat/completions) silently ignores
 # "think" — the request succeeds but the whole response ends up in a "reasoning"
@@ -19,26 +18,15 @@ LLM_MODEL = "qwen3.5:9b"
 
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
+QUIZ_QUESTION_COUNT = 5
 
-device = "cuda"
-torch_dtype = torch.float16
-
-model_id = "openai/whisper-medium"
-whisper_model = AutoModelForSpeechSeq2Seq.from_pretrained(
-    model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
+model = WhisperModel(
+    "large-v3",
+    device="cuda",
+    compute_type="float16"
 )
-whisper_model.to(device)
 
-processor = AutoProcessor.from_pretrained(model_id)
-
-pipe = pipeline(
-    "automatic-speech-recognition",
-    model=whisper_model,
-    tokenizer=processor.tokenizer,
-    feature_extractor=processor.feature_extractor,
-    torch_dtype=torch_dtype,
-    device=device,
-)
+batched_model = BatchedInferencePipeline(model=model)
 
 def download_video_audio(video_id: int, url: str) -> str:
     ydl_opts = {
@@ -52,12 +40,22 @@ def download_video_audio(video_id: int, url: str) -> str:
     return f"downloads/{video_id}.{info['ext']}"
 
 def transcribe_audio(audio_path: str) -> dict:
-    return pipe(audio_path,
-    batch_size=16,
-    return_timestamps=True,
-    generate_kwargs={
-        "task": "transcribe"
-    })
+    segments, _info = batched_model.transcribe(
+        audio_path,
+        beam_size=3,
+        batch_size=16
+    )
+
+    transcript = []
+    chunks = []
+    for segment in segments:
+        transcript.append(segment.text)
+        # Kept per-segment so the frontend can show a timestamped transcript,
+        # not just one giant block of text — transcribeScheduler.py stores
+        # this as Transcribe.chunks (JSON) alongside the plain-text version.
+        chunks.append({"timestamp": [segment.start, segment.end], "text": segment.text})
+
+    return {"text": " ".join(transcript), "chunks": chunks}
 
 def _call_llm_with_retry(messages, model=LLM_MODEL, temperature=None):
     payload = {"model": model, "messages": messages, "think": False, "stream": False}
@@ -186,8 +184,6 @@ def _summarize_group(group: list[str]) -> str:
     ]
 
     return _call_llm_with_retry(model=LLM_MODEL, messages=messages)
-
-QUIZ_QUESTION_COUNT = 5
 
 def generate_quiz(summary: str, num_questions: int = QUIZ_QUESTION_COUNT) -> list[dict]:
     messages = [

@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 dotenv.config();
 
 const sequelize = new Sequelize({
-  host: 'localhost',         // Database host
+  host: 'ec2-107-20-11-108.compute-1.amazonaws.com',         // Database host
   dialect: 'mysql',          // Database type (e.g., mysql, postgres, etc.)
   username: process.env.MYSQLUSER, // Database username loveiosa
   password: process.env.MYSQLPASSWORD, // Database password 0bBwcbfb51
