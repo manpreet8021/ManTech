@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import SummaryBlock from '../components/SummaryBlock'
 import QuizBlock from '../components/QuizBlock'
+import MarkdownContent from '../components/MarkdownContent'
 import { getVideoById } from '../data/mockData'
 import { getYoutubeEmbedUrl } from '../utils/youtube'
 
@@ -109,9 +110,7 @@ export default function VideoPlayerPage() {
 
             {activeTab === 'transcript' &&
               (video.translation ? (
-                <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                  {video.translation}
-                </p>
+                <MarkdownContent text={video.translation} />
               ) : (
                 <p className="text-sm text-slate-400">Transcript not available yet.</p>
               ))}

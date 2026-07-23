@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import SummaryBlock from '../components/SummaryBlock'
 import QuizBlock from '../components/QuizBlock'
+import MarkdownContent from '../components/MarkdownContent'
 import { useGetVideoDetailQuery } from '../store/slice/api/videoApiSlice'
 import { getYoutubeEmbedUrl } from '../utils/youtube'
 
@@ -106,9 +107,7 @@ export default function VideoDetailPage() {
 
           {activeTab === 'translation' &&
             (video.translation ? (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
-                {video.translation}
-              </p>
+              <MarkdownContent text={video.translation} />
             ) : (
               <p className="text-sm text-slate-400">Translation not available yet — still processing.</p>
             ))}

@@ -10,6 +10,6 @@ SQLAlchemy==2.0.51
 PyMySQL==1.2.0
 yt-dlp==2026.6.9
 transformers==5.12.1
-openai==2.43.0
+requests==2.34.2
 langchain-text-splitters==1.1.2
 tqdm==4.68.3

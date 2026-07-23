@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import MarkdownContent from './MarkdownContent'
 
 export default function QuizBlock({ questions }) {
   const [answers, setAnswers] = useState({})
@@ -23,7 +24,7 @@ export default function QuizBlock({ questions }) {
         return (
           <div key={qIndex} className="rounded-xl border border-slate-200 p-5">
             <p className="mb-4 text-sm font-medium text-slate-900">
-              {qIndex + 1}. {q.question}
+              {qIndex + 1}. <MarkdownContent text={q.question} inline />
             </p>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {q.options.map((option) => {

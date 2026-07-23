@@ -1,6 +1,7 @@
 from db import Base
-from sqlalchemy import Column, Integer, Text, ForeignKey
+from sqlalchemy import Column, Integer, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, Session
+from sqlalchemy.sql import func
 
 class Quiz(Base):
     __tablename__ = "quiz"
@@ -10,6 +11,13 @@ class Quiz(Base):
     question = Column(Text, nullable=False)
     options = Column(Text, nullable=False)
     answer = Column(Text, nullable=False)
+    # Columns already exist on the live table (created by the Node side's
+    # Sequelize `timestamps: true`) as NOT NULL with no SQL-level default —
+    # Sequelize supplies the value itself on every write, so these use
+    # SQLAlchemy's `default` (computed here and sent in the INSERT), not
+    # `server_default`. Same fix as model/transcribe.py.
+    createdAt = Column(DateTime, nullable=False, default=func.now())
+    updatedAt = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())
 
     video = relationship("Video", back_populates="quiz")
 

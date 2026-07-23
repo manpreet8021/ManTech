@@ -1,15 +1,21 @@
 import json
+import re
 import time
 
 import yt_dlp
 import torch
+import requests
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-from openai import OpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from tqdm import tqdm
 
-llm_client = OpenAI(base_url="http://localhost:11434/v1", api_key="api")
-LLM_MODEL = "gpt-oss:20b"
+# Ollama's OpenAI-compatible endpoint (/v1/chat/completions) silently ignores
+# "think" — the request succeeds but the whole response ends up in a "reasoning"
+# field with empty content, since qwen3.5 is a thinking model by default. Its
+# native /api/chat endpoint does honor "think": false, so we talk to that
+# directly instead of going through the openai SDK.
+OLLAMA_CHAT_URL = "http://localhost:11434/api/chat"
+LLM_MODEL = "qwen3.5:9b"
 
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
@@ -46,13 +52,24 @@ def download_video_audio(video_id: int, url: str) -> str:
     return f"downloads/{video_id}.{info['ext']}"
 
 def transcribe_audio(audio_path: str) -> dict:
-    return pipe(audio_path, return_timestamps=True)
+    return pipe(audio_path,
+    batch_size=16,
+    return_timestamps=True,
+    generate_kwargs={
+        "task": "transcribe"
+    })
 
-def _call_llm_with_retry(**kwargs):
+def _call_llm_with_retry(messages, model=LLM_MODEL, temperature=None):
+    payload = {"model": model, "messages": messages, "think": False, "stream": False}
+    if temperature is not None:
+        payload["options"] = {"temperature": temperature}
+
     last_error = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            return llm_client.chat.completions.create(**kwargs)
+            response = requests.post(OLLAMA_CHAT_URL, json=payload, timeout=180)
+            response.raise_for_status()
+            return response.json()["message"]["content"]
         except Exception as e:
             last_error = e
             if attempt < MAX_RETRIES:
@@ -61,7 +78,7 @@ def _call_llm_with_retry(**kwargs):
     raise last_error
 
 def translate_text(text: str, existing_progress: list[str] | None = None, on_progress=None) -> str:
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=0)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=2500, chunk_overlap=200)
     chunks = text_splitter.split_text(text)
 
     translations = list(existing_progress or [])
@@ -88,8 +105,8 @@ def translate_text(text: str, existing_progress: list[str] | None = None, on_pro
             }
         ]
 
-        response = _call_llm_with_retry(model=LLM_MODEL, temperature=0, messages=messages)
-        translations.append(response.choices[0].message.content.strip())
+        content = _call_llm_with_retry(model=LLM_MODEL, temperature=0, messages=messages)
+        translations.append(content.strip())
 
         if on_progress:
             on_progress(translations)
@@ -97,7 +114,7 @@ def translate_text(text: str, existing_progress: list[str] | None = None, on_pro
     return "".join(translations)
 
 def summarize_text(text: str, existing_chunk_progress: list[str] | None = None, on_chunk_progress=None) -> str:
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=3500, chunk_overlap=200)
     chunks = text_splitter.split_text(text)
 
     summaries = list(existing_chunk_progress or [])
@@ -120,8 +137,8 @@ def summarize_text(text: str, existing_chunk_progress: list[str] | None = None, 
             {"role": "user", "content": f"""{chunk}"""}
         ]
 
-        response = _call_llm_with_retry(model=LLM_MODEL, messages=messages)
-        summaries.append(response.choices[0].message.content)
+        content = _call_llm_with_retry(model=LLM_MODEL, messages=messages)
+        summaries.append(content)
 
         if on_chunk_progress:
             on_chunk_progress(summaries)
@@ -149,8 +166,7 @@ def summarize_text(text: str, existing_chunk_progress: list[str] | None = None, 
         {"role": "user", "content": f"""{summaries[0]}"""}
     ]
 
-    response = _call_llm_with_retry(model=LLM_MODEL, messages=final_messages)
-    return response.choices[0].message.content
+    return _call_llm_with_retry(model=LLM_MODEL, messages=final_messages)
 
 def _summarize_group(group: list[str]) -> str:
     combined = "\n\n".join(group)
@@ -169,8 +185,7 @@ def _summarize_group(group: list[str]) -> str:
         {"role": "user", "content": f"""{combined}"""}
     ]
 
-    response = _call_llm_with_retry(model=LLM_MODEL, messages=messages)
-    return response.choices[0].message.content
+    return _call_llm_with_retry(model=LLM_MODEL, messages=messages)
 
 QUIZ_QUESTION_COUNT = 5
 
@@ -186,14 +201,17 @@ def generate_quiz(summary: str, num_questions: int = QUIZ_QUESTION_COUNT) -> lis
             - Provide exactly 4 options per question, with exactly one correct answer.
             - Return ONLY a JSON array, no prose, no markdown code fences.
             - Each item must have exactly these keys: "question" (string), "options" (array of 4 strings), "answer" (string that exactly matches one of the options).
+            - Write any math in plain text (e.g. x^2, P(x) = Bx + C). Do not use LaTeX notation or backslash commands (no \\(, \\), \\neq, \\sum, etc.) — they break JSON parsing.
         """},
         {"role": "user", "content": summary}
     ]
 
     last_error = None
     for attempt in range(MAX_RETRIES):
-        response = _call_llm_with_retry(model=LLM_MODEL, temperature=0, messages=messages)
-        content = _strip_json_fences(response.choices[0].message.content.strip())
+        content = _call_llm_with_retry(model=LLM_MODEL, temperature=0, messages=messages)
+        content = _strip_json_fences(content.strip())
+        content = _sanitize_json_escapes(content)
+        content = _strip_trailing_commas(content)
 
         try:
             questions = json.loads(content)
@@ -203,6 +221,19 @@ def generate_quiz(summary: str, num_questions: int = QUIZ_QUESTION_COUNT) -> lis
             last_error = e
 
     raise ValueError(f"LLM did not return a valid quiz after {MAX_RETRIES} attempts") from last_error
+
+def _sanitize_json_escapes(text: str) -> str:
+    # LLMs occasionally echo LaTeX (\(, \), \neq, \sum, ...) inside JSON string
+    # values despite being told not to. Those backslashes aren't valid JSON
+    # escapes and make json.loads raise "Invalid \escape" — double them up
+    # (except ones already forming a real JSON escape) so parsing still works.
+    return re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', text)
+
+def _strip_trailing_commas(text: str) -> str:
+    # LLMs sometimes leave a trailing comma before a closing ] or } (valid in
+    # JS/JSON5, not in strict JSON) — e.g. [..., {...},] — which json.loads
+    # rejects as "Illegal trailing comma". Strip it before parsing.
+    return re.sub(r',(\s*[\]}])', r'\1', text)
 
 def _strip_json_fences(text: str) -> str:
     if text.startswith("```"):
